@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Bio-Digital Terrarium</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #0a0a0c;
+            font-family: 'Courier New', Courier, monospace;
+            color: #bcbcbc;
+        }
+
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .interface {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 30px;
+        }
+
+        header, footer, .controls {
+            pointer-events: auto;
+        }
+
+        header h1 {
+            font-size: 1.5rem;
+            letter-spacing: 4px;
+            color: #d11a2a;
+            text-transform: uppercase;
+            text-shadow: 0 0 10px rgba(209, 26, 42, 0.4);
+        }
+
+        header p {
+            font-size: 0.8rem;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .controls {
+            background: rgba(15, 15, 18, 0.85);
+            border: 1px solid #222;
+            padding: 20px;
+            border-radius: 4px;
+            max-width: 300px;
+            backdrop-filter: blur(5px);
+        }
+
+        .controls h2 {
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stats {
+            font-size: 0.75rem;
+            line-height: 1.6;
+            color: #8a8a8a;
+        }
+
+        .stats span {
+            color: #d11a2a;
+            font-weight: bold;
+        }
+
+        footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            font-size: 0.8rem;
+        }
+
+        .instructions {
+            color: #444;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.4; }
+            50% { opacity: 1; }
+            100% { opacity: 0.4; }
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="canvas"></canvas>
+
+    <div class="interface">
+        <header>
+            <h1>Ecosystem // Gen_01</h1>
+            <p>Interactive Bio-Mechanical Interface</p>
+        </header>
+
+        <div class="controls">
+            <h2>System Readout</h2>
+            <div class="stats">
+                Core Biome: <span id="node-count">0</span> Active Nodes<br>
+                Ecosystem Health: <span id="system-health">100%</span><br>
+                Substrate Temp: <span>37.2°C</span>
+            </div>
+        </div>
+
+        <footer>
+            <div class="instructions">Click anywhere to inject synthetic biomass particles.</div>
+            <div>&copy; 2026 // Unknown Origin</div>
+        </footer>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const nodeCountDisplay = document.getElementById('node-count');
+        const healthDisplay = document.getElementById('system-health');
+
+        let particles = [];
+        const maxDistance = 120; // Connection distance limit
+
+        // Handle sizing
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // Particle Blueprint
+        class Organism {
+            constructor(x, y, isCore = false) {
+                this.x = x;
+                this.y = y;
+                this.isCore = isCore;
+                this.radius = isCore ? Math.random() * 4 + 4 : Math.random() * 2 + 1;
+                this.vx = (Math.random() - 0.5) * 1.5;
+                this.vy = (Math.random() - 0.5) * 1.5;
+                this.energy = 100;
+                this.decayRate = isCore ? 0 : Math.random() * 0.1 + 0.05;
+                this.color = isCore ? 'rgba(209, 26, 42, ' : 'rgba(100, 110, 120, ';
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // Bounce off boundaries
+                if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
+                if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
+
+                // Decay non-core particles over time
+                if (!this.isCore) {
+                    this.energy -= this.decayRate;
+                }
+            }
+
+            draw() {
+                let alpha = this.energy / 100;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color + alpha + ')';
+                ctx.fill();
+            }
+        }
+
+        // Initialize persistent background nodes (The Substrate)
+        function initBiome() {
+            const initialSpawn = Math.floor((canvas.width * canvas.height) / 15000);
+            for (let i = 0; i < initialSpawn; i++) {
+                particles.push(new Organism(Math.random() * canvas.width, Math.random() * canvas.height, true));
+            }
+        }
+
+        // User injects new biomass on click
+        window.addEventListener('click', (e) => {
+            // Prevent interference with UI text selections
+            if(e.target.tagName === 'BODY' || e.target.id === 'canvas') {
+                for (let i = 0; i < 8; i++) {
+                    const offsetAngle = Math.random() * Math.PI * 2;
+                    const offsetDist = Math.random() * 20;
+                    const spawnX = e.clientX + Math.cos(offsetAngle) * offsetDist;
+                    const spawnY = e.clientY + Math.sin(offsetAngle) * offsetDist;
+                    particles.push(new Organism(spawnX, spawnY, false));
+                }
+            }
+        });
+
+        // Main Simulation Loop
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Filter out completely decayed particles
+            particles = particles.filter(p => p.energy > 0);
+            
+            nodeCountDisplay.innerText = particles.length;
+            
+            // Calculate pseudo "health" index based on active user-created biomass
+            const dynamicNodes = particles.filter(p => !p.isCore).length;
+            const healthIndex = Math.min(100, 50 + (dynamicNodes * 2));
+            healthDisplay.innerText = `${Math.floor(healthIndex)}%`;
+            healthDisplay.style.color = healthIndex > 60 ? '#d11a2a' : '#666';
+
+            // Draw neural fractures / connections
+            for (let i = 0; i < particles.length; i++) {
+                for (let j = i + 1; j < particles.length; j++) {
+                    const dx = particles[i].x - particles[j].x;
+                    const dy = particles[i].y - particles[j].y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < maxDistance) {
+                        // Blend opacities and distance for sharp, clean webbing lines
+                        const minEnergy = Math.min(particles[i].energy, particles[j].energy) / 100;
+                        const alpha = (1 - dist / maxDistance) * 0.25 * minEnergy;
+                        
+                        ctx.beginPath();
+                        ctx.moveTo(particles[i].x, particles[i].y);
+                        ctx.lineTo(particles[j].x, particles[j].y);
+                        
+                        // Core links use a muted deep red accent; injected spores use sharp charcoal/grey
+                        ctx.strokeStyle = (particles[i].isCore && particles[j].isCore) 
+                            ? `rgba(180, 30, 45, ${alpha * 1.5})` 
+                            : `rgba(70, 75, 80, ${alpha})`;
+                            
+                        ctx.lineWidth = 0.8;
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            // Update and render individual objects
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        initBiome();
+        animate();
+    </script>
+</body>
+</html>
