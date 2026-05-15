@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Body Count Unknown // System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            background-color: #1a1a1e; /* Lifted from near-black to dark industrial ash */
+            font-family: 'Courier New', Courier, monospace;
+            color: #8c8c93;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+
+        /* Fixed Background Simulation */
+        #canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            background: linear-gradient(180deg, #1a1a1e 0%, #141417 100%); /* Adds subtle depth */
+        }
+
+        /* Scrolling Content Layer */
+        .content-container {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 60px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 60px;
+        }
+
+        /* Header / Brand Blocks */
+        header {
+            display: flex;
+            align-items: center;
+            gap: 25px;
+        }
+
+        .brand-logo {
+            width: 70px;
+            height: 70px;
+            object-fit: contain;
+            border: 1px solid #333;
+            padding: 5px;
+            background: rgba(26, 26, 30, 0.8);
+        }
+
+        header h1 {
+            font-size: 2rem;
+            font-weight: 900;
+            letter-spacing: 6px;
+            color: #e52e3d; /* Elevated red brightness slightly to pop off the ash backdrop */
+            text-transform: uppercase;
+            text-shadow: 0 0 15px rgba(229, 46, 61, 0.3);
+        }
+
+        header p {
+            font-size: 0.75rem;
+            color: #6a6a75;
+            margin-top: 4px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        /* System Info Grid Box */
+        .panel {
+            background: rgba(28, 28, 34, 0.85); /* Lightened translucent panel */
+            border: 1px solid #2b2b33;
+            padding: 30px;
+            border-radius: 2px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+        }
+
+        .panel h2 {
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+            color: #f0f0f5;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border-bottom: 1px solid #3a3a46;
+            padding-bottom: 8px;
+        }
+
+        .stats {
+            font-size: 0.8rem;
+            line-height: 1.8;
+            color: #a3a3aa;
+        }
+
+        .stats span {
+            color: #e52e3d;
+            font-weight: bold;
+        }
+
+        .brand-statement {
+            margin-top: 20px;
+            font-size: 0.75rem;
+            color: #6a6a75;
+            line-height: 1.5;
+            font-style: italic;
+        }
+
+        /* Vertical Linear Media Section */
+        .archive-section {
+            display: flex;
+            flex-direction: column;
+            gap: 40px;
+        }
+
+        .archive-section h3 {
+            font-size: 0.9rem;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: #f0f0f5;
+            border-bottom: 1px solid #3a3a46;
+            padding-bottom: 10px;
+            margin-bottom: -10px;
+        }
+
+        .media-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .media-item {
+            position: relative;
+            background: rgba(24, 24, 28, 0.6);
+            border: 1px solid #2b2b33;
+            width: 100%;
+            overflow: hidden;
+            transition: all 0.4s ease;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .media-item img {
+            width: 100%;
+            height: auto;
+            display: block;
+            filter: grayscale(100%) contrast(105%);
+            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .media-item:hover {
+            border-color: #e52e3d;
+            box-shadow: 0 0 20px rgba(229, 46, 61, 0.15);
+        }
+
+        .media-item:hover img {
+            filter: grayscale(0%) contrast(100%);
+            transform: scale(1.01);
+        }
+
+        footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.75rem;
+            letter-spacing: 1px;
+            border-top: 1px solid #2b2b33;
+            padding-top: 30px;
+            margin-top: 20px;
+            color: #55555c;
+        }
+
+        .instructions {
+            color: #55555c;
+            animation: pulse 2.5s infinite;
+            text-transform: uppercase;
+            font-size: 0.7rem;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.4; }
+            50% { opacity: 0.9; }
+            100% { opacity: 0.4; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Fixed canvas backdrop -->
+    <canvas id="canvas"></canvas>
+
+    <!-- Main Scrolling Layout Wrapper -->
+    <div class="content-container">
+        
+        <header>
+            <img src="logo.png" alt="BCU" class="brand-logo" onerror="this.style.visibility='hidden';">
+            <div>
+                <h1>Body Count Unknown</h1>
+                <p>Substructural Network // Specimen_01</p>
+            </div>
+        </header>
+
+        <div class="panel">
+            <h2>System Manifest</h2>
+            <div class="stats">
+                Neural Nodes: <span id="node-count">0</span><br>
+                Structural Integrity: <span id="system-health">100%</span><br>
+                Core Frequency: <span>Sub-Hz</span>
+            </div>
+            <div class="brand-statement">
+                // Disrupting the template. A living, volatile landscape where the boundary between organic flesh and synthetic structure fractures.
+            </div>
+        </div>
+
+        <!-- Media Display Content Block -->
+        <div class="archive-section">
+            <h3>Visual Records</h3>
+            <div class="media-stack">
+                <div class="media-item"><img src="pic1.jpg" alt="Record 01" onerror="this.style.display='none';"></div>
+                <div class="media-item"><img src="pic2.jpg" alt="Record 02" onerror="this.style.display='none';"></div>
+                <div class="media-item"><img src="pic3.jpg" alt="Record 03" onerror="this.style.display='none';"></div>
+                <div class="media-item"><img src="pic4.jpg" alt="Record 04" onerror="this.style.display='none';"></div>
+            </div>
+        </div>
+
+        <footer>
+            <div class="instructions">Interact with backdrop to fracture cell grid.</div>
+            <div>&copy; 2026 // Body Count Unknown. All Rights Reserved.</div>
+        </footer>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const nodeCountDisplay = document.getElementById('node-count');
+        const healthDisplay = document.getElementById('system-health');
+
+        let particles = [];
+        const maxDistance = 145; 
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        class Organism {
+            constructor(x, y, isCore = false) {
+                this.x = x;
+                this.y = y;
+                this.isCore = isCore;
+                this.radius = isCore ? Math.random() * 3 + 2.5 : Math.random() * 2 + 0.5;
+                this.vx = (Math.random() - 0.5) * (isCore ? 0.5 : 2.2);
+                this.vy = (Math.random() - 0.5) * (isCore ? 0.5 : 2.2);
+                this.energy = 100;
+                this.decayRate = isCore ? 0 : Math.random() * 0.14 + 0.07;
+                
+                // Shifted node base colors to stand out cleanly against the new lighter slate
+                this.color = isCore ? 'rgba(229, 46, 61, ' : 'rgba(140, 145, 155, ';
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+
+                if (this.isCore) {
+                    const cx = canvas.width / 2;
+                    const cy = canvas.height / 2;
+                    this.vx += (cx - this.x) * 0.00001;
+                    this.vy += (cy - this.y) * 0.00001;
+                }
+
+                if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
+                if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
+
+                if (!this.isCore) {
+                    this.energy -= this.decayRate;
+                }
+            }
+
+            draw() {
+                let alpha = this.energy / 100;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color + alpha + ')';
+                ctx.fill();
+            }
+        }
+
+        function initBiome() {
+            particles = [];
+            const coreCount = Math.floor((canvas.width * canvas.height) / 16000);
+            for (let i = 0; i < coreCount; i++) {
+                particles.push(new Organism(Math.random() * canvas.width, Math.random() * canvas.height, true));
+            }
+        }
+
+        window.addEventListener('click', (e) => {
+            if (e.target.tagName === 'BODY' || e.target.id === 'canvas' || e.target.classList.contains('content-container')) {
+                for (let i = 0; i < 12; i++) {
+                    const offsetAngle = Math.random() * Math.PI * 2;
+                    const offsetDist = Math.random() * 35;
+                    const spawnX = e.clientX + Math.cos(offsetAngle) * offsetDist;
+                    const spawnY = e.clientY + Math.sin(offsetAngle) * offsetDist;
+                    particles.push(new Organism(spawnX, spawnY, false));
+                }
+            }
+        });
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles = particles.filter(p => p.energy > 0);
+            nodeCountDisplay.innerText = particles.length;
+            
+            const dynamicNodes = particles.filter(p => !p.isCore).length;
+            const healthIndex = Math.max(20, Math.min(100, 100 - (dynamicNodes * 1.5)));
+            healthDisplay.innerText = `${Math.floor(healthIndex)}%`;
+            healthDisplay.style.color = healthIndex < 70 ? '#777' : '#e52e3d';
+
+            for (let i = 0; i < particles.length; i++) {
+                for (let j = i + 1; j < particles.length; j++) {
+                    const dx = particles[i].x - particles[j].x;
+                    const dy = particles[i].y - particles[j].y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < maxDistance) {
+                        const minEnergy = Math.min(particles[i].energy, particles[j].energy) / 100;
+                        const alpha = (1 - dist / maxDistance) * 0.22 * minEnergy;
+                        
+                        ctx.beginPath();
+                        ctx.moveTo(particles[i].x, particles[i].y);
+                        ctx.lineTo(particles[j].x, particles[j].y);
+                        
+                        // Webbing strings shifted to high contrast crisp tones
+                        ctx.strokeStyle = (particles[i].isCore && particles[j].isCore) 
+                            ? `rgba(229, 46, 61, ${alpha * 1.5})` 
+                            : `rgba(95, 100, 110, ${alpha})`;
+                            
+                        ctx.lineWidth = 0.75;
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        initBiome();
+        animate();
+    </script>
+</body>
+</html>
